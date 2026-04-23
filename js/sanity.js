@@ -8,7 +8,7 @@
 // Fill these in after you create your Sanity project
 // You'll find PROJECT_ID in your Sanity dashboard at sanity.io/manage
 const SANITY_CONFIG = {
-  projectId: 'YOUR_PROJECT_ID',   // e.g. 'abc123de'
+  projectId: 'efoldtar',   // e.g. 'abc123de'
   dataset:   'production',
   apiVersion: '2024-01-01',
 }
