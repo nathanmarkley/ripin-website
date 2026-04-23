@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resource Library | RIPIN</title>
+  <meta name="description" content="Free guides, videos, and links to help Rhode Island families navigate special education, healthcare, and more." />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/ripin.css">
+</head>
+<body>
+
+<div id="ripin-banner"></div>
+<div id="ripin-nav"></div>
+
+<main>
+
+  <!-- Hero -->
+  <section class="ripin-hero" style="padding:3rem 0">
+    <div class="container hero-content text-center">
+      <h1 class="text-white mb-3">Resource Library</h1>
+      <p class="lead mb-0" style="max-width:580px;margin:0 auto">
+        Free guides, videos, and links to help Rhode Island families navigate
+        special education, healthcare, healthy aging, and more.
+      </p>
+    </div>
+  </section>
+
+  <section class="py-5">
+    <div class="container">
+
+      <!-- ── Search & Filters ──────────────────────────────── -->
+      <div class="ripin-card p-4 mb-5">
+        <!-- Search -->
+        <div class="input-group mb-4">
+          <span class="input-group-text bg-white border-end-0">🔍</span>
+          <input type="text" id="resourceSearch" class="form-control border-start-0 ps-0"
+                 placeholder="Search resources…" style="border-radius:0 0.625rem 0.625rem 0">
+        </div>
+
+        <div class="row g-4">
+          <!-- Type filter -->
+          <div class="col-md-4">
+            <p class="text-uppercase fw-bold mb-2" style="font-size:0.75rem;color:var(--ripin-gray);letter-spacing:.06em">
+              Type
+            </p>
+            <div class="d-flex flex-wrap gap-2" id="typeFilters">
+              <button class="filter-pill active" data-type="all">All Types</button>
+              <button class="filter-pill" data-type="PDF">📄 PDF</button>
+              <button class="filter-pill" data-type="VIDEO">🎥 Video</button>
+              <button class="filter-pill" data-type="LINK">🔗 Link</button>
+            </div>
+          </div>
+
+          <!-- Category filter -->
+          <div class="col-md-5">
+            <p class="text-uppercase fw-bold mb-2" style="font-size:0.75rem;color:var(--ripin-gray);letter-spacing:.06em">
+              Category
+            </p>
+            <div class="d-flex flex-wrap gap-2" id="categoryFilters">
+              <button class="filter-pill active" data-cat="all">All Categories</button>
+              <!-- Loaded from Sanity -->
+            </div>
+          </div>
+
+          <!-- Language filter -->
+          <div class="col-md-3">
+            <p class="text-uppercase fw-bold mb-2" style="font-size:0.75rem;color:var(--ripin-gray);letter-spacing:.06em">
+              Language
+            </p>
+            <div class="d-flex flex-wrap gap-2" id="langFilters">
+              <button class="filter-pill active" data-lang="all">All</button>
+              <button class="filter-pill" data-lang="en">English</button>
+              <button class="filter-pill" data-lang="es">Español</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result count -->
+        <p id="resultCount" class="text-muted small mt-3 mb-0"></p>
+      </div>
+
+      <!-- ── Featured Resources ────────────────────────────── -->
+      <div id="featuredSection" style="display:none">
+        <h3 class="fw-bold mb-3 d-flex align-items-center gap-2">
+          ⭐ Featured Resources
+        </h3>
+        <div id="featuredGrid" class="row g-4 mb-5"></div>
+      </div>
+
+      <!-- ── All Resources ─────────────────────────────────── -->
+      <div>
+        <h3 class="fw-bold mb-3" id="allResourcesHeading">All Resources</h3>
+        <div id="resourcesGrid" class="row g-3">
+          <!-- Loading -->
+          <div class="col-12 text-center py-5 text-muted" id="resourcesLoading">
+            <div class="spinner-border spinner-border-sm me-2"></div>
+            Loading resources…
+          </div>
+        </div>
+      </div>
+
+      <!-- No results -->
+      <div id="noResults" class="text-center py-5" style="display:none">
+        <p style="font-size:3rem">🔍</p>
+        <h5 class="fw-bold">No resources found</h5>
+        <p class="text-muted">Try adjusting your search or filters.</p>
+        <button class="btn btn-ripin-outline" onclick="resetFilters()">Clear Filters</button>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<div id="ripin-footer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/partials.js"></script>
+<script src="js/sanity.js"></script>
+<script>
+  renderNav('resources')
+  renderFooter()
+  renderBanner()
+  renderPopup('resources')
+
+  let allResources = []
+  let activeType   = 'all'
+  let activeCat    = 'all'
+  let activeLang   = 'all'
+  let searchTerm   = ''
+
+  // Type icons and labels
+  const typeConfig = {
+    PDF:      { icon: '📄', label: 'PDF',   badge: 'ripin-badge-orange' },
+    VIDEO:    { icon: '🎥', label: 'Video', badge: 'ripin-badge-blue' },
+    LINK:     { icon: '🔗', label: 'Link',  badge: 'ripin-badge-teal' },
+    DOCUMENT: { icon: '📝', label: 'Doc',   badge: 'ripin-badge-yellow' },
+  }
+
+  const langLabels = { en: 'English', es: 'Español', pt: 'Português' }
+
+  // ── Load resources & categories ──────────────────────────────
+  async function init() {
+    const [resources, categories] = await Promise.all([
+      getResources(),
+      getResourceCategories(),
+    ])
+
+    allResources = resources
+
+    // Inject category filter pills
+    const catContainer = document.getElementById('categoryFilters')
+    categories.forEach(cat => {
+      const btn = document.createElement('button')
+      btn.className = 'filter-pill'
+      btn.dataset.cat = cat.slug?.current || cat.slug
+      btn.textContent = cat.name
+      catContainer.appendChild(btn)
+    })
+
+    renderResources()
+  }
+
+  // ── Filter & render ──────────────────────────────────────────
+  function getFiltered() {
+    return allResources.filter(r => {
+      const matchSearch = !searchTerm ||
+        r.title.toLowerCase().includes(searchTerm) ||
+        (r.description || '').toLowerCase().includes(searchTerm)
+      const matchType = activeType === 'all' || r.resourceType === activeType
+      const matchCat  = activeCat  === 'all' ||
+        (r.categories || []).some(c => (c.slug?.current || c.slug) === activeCat)
+      const matchLang = activeLang === 'all' || r.language === activeLang
+      return matchSearch && matchType && matchCat && matchLang
+    })
+  }
+
+  function renderResources() {
+    document.getElementById('resourcesLoading')?.remove()
+
+    const filtered  = getFiltered()
+    const featured  = filtered.filter(r => r.featured)
+    const regular   = filtered.filter(r => !r.featured)
+
+    // Featured
+    const featSection = document.getElementById('featuredSection')
+    const featGrid    = document.getElementById('featuredGrid')
+    if (featured.length && activeCat === 'all' && !searchTerm) {
+      featSection.style.display = 'block'
+      featGrid.innerHTML = featured.map(r => resourceCardHTML(r, true)).join('')
+    } else {
+      featSection.style.display = 'none'
+    }
+
+    // Regular
+    const grid    = document.getElementById('resourcesGrid')
+    const noRes   = document.getElementById('noResults')
+    const heading = document.getElementById('allResourcesHeading')
+
+    if (filtered.length === 0) {
+      grid.innerHTML = ''
+      noRes.style.display = 'block'
+      heading.style.display = 'none'
+    } else {
+      noRes.style.display = 'none'
+      heading.style.display = featured.length ? 'block' : 'none'
+      if (!featured.length) heading.style.display = 'none'
+      grid.innerHTML = regular.map(r => resourceCardHTML(r)).join('')
+    }
+
+    // Count
+    document.getElementById('resultCount').textContent =
+      `Showing ${filtered.length} of ${allResources.length} resources`
+  }
+
+  function resourceCardHTML(r, large = false) {
+    const type   = typeConfig[r.resourceType] || typeConfig.LINK
+    const href   = r.resourceType === 'PDF' || r.resourceType === 'DOCUMENT'
+      ? (r.fileUrl || '#')
+      : (r.url || '#')
+    const isDownload = r.resourceType === 'PDF' || r.resourceType === 'DOCUMENT'
+    const lang   = r.language !== 'en' ? langLabels[r.language] || r.language : ''
+
+    if (large) {
+      return `
+        <div class="col-md-6">
+          <a href="${href}" ${isDownload ? 'download' : 'target="_blank" rel="noopener"'}
+             class="ripin-card resource-card d-flex text-decoration-none h-100">
+            <div class="resource-icon flex-shrink-0"
+                 style="background:var(--ripin-blue-light);color:var(--ripin-blue);font-size:1.375rem">
+              ${type.icon}
+            </div>
+            <div class="flex-grow-1">
+              <div class="d-flex align-items-start gap-2 mb-1">
+                <strong class="text-ripin-navy" style="font-size:1rem">${r.title}</strong>
+                <span style="color:#F59E0B;font-size:0.9rem">⭐</span>
+              </div>
+              ${r.description ? `<p class="text-muted mb-2" style="font-size:0.875rem;line-height:1.5">${r.description}</p>` : ''}
+              <div class="d-flex flex-wrap gap-2">
+                <span class="ripin-badge ${type.badge}">${type.icon} ${type.label}</span>
+                ${lang ? `<span class="ripin-badge ripin-badge-teal">🌐 ${lang}</span>` : ''}
+                ${(r.categories || []).map(c =>
+                  `<span class="ripin-badge" style="background:#f3f4f6;color:var(--ripin-gray)">${c.name}</span>`
+                ).join('')}
+              </div>
+            </div>
+            <span class="flex-shrink-0 ms-2" style="color:var(--ripin-gray)">
+              ${isDownload ? '⬇️' : '↗️'}
+            </span>
+          </a>
+        </div>
+      `
+    }
+
+    return `
+      <div class="col-12">
+        <a href="${href}" ${isDownload ? 'download' : 'target="_blank" rel="noopener"'}
+           class="ripin-card resource-card d-flex text-decoration-none">
+          <div class="resource-icon flex-shrink-0"
+               style="background:var(--ripin-blue-light);color:var(--ripin-blue)">
+            ${type.icon}
+          </div>
+          <div class="flex-grow-1">
+            <strong class="text-ripin-navy">${r.title}</strong>
+            ${r.description
+              ? `<p class="text-muted mb-1 mt-1" style="font-size:0.85rem">${r.description}</p>`
+              : ''}
+            <div class="d-flex flex-wrap gap-2 mt-1">
+              <span class="ripin-badge ${type.badge}">${type.label}</span>
+              ${lang ? `<span class="ripin-badge ripin-badge-teal">🌐 ${lang}</span>` : ''}
+              ${(r.categories || []).map(c =>
+                `<span class="ripin-badge" style="background:#f3f4f6;color:var(--ripin-gray)">${c.name}</span>`
+              ).join('')}
+            </div>
+          </div>
+          <span class="flex-shrink-0 ms-3 align-self-center" style="color:var(--ripin-gray)">
+            ${isDownload ? '⬇️' : '↗️'}
+          </span>
+        </a>
+      </div>
+    `
+  }
+
+  // ── Filter event listeners ───────────────────────────────────
+  document.getElementById('typeFilters').addEventListener('click', e => {
+    const btn = e.target.closest('.filter-pill')
+    if (!btn) return
+    document.querySelectorAll('#typeFilters .filter-pill').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    activeType = btn.dataset.type
+    renderResources()
+  })
+
+  document.getElementById('categoryFilters').addEventListener('click', e => {
+    const btn = e.target.closest('.filter-pill')
+    if (!btn) return
+    document.querySelectorAll('#categoryFilters .filter-pill').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    activeCat = btn.dataset.cat
+    renderResources()
+  })
+
+  document.getElementById('langFilters').addEventListener('click', e => {
+    const btn = e.target.closest('.filter-pill')
+    if (!btn) return
+    document.querySelectorAll('#langFilters .filter-pill').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    activeLang = btn.dataset.lang
+    renderResources()
+  })
+
+  let searchTimer
+  document.getElementById('resourceSearch').addEventListener('input', e => {
+    clearTimeout(searchTimer)
+    searchTimer = setTimeout(() => {
+      searchTerm = e.target.value.toLowerCase().trim()
+      renderResources()
+    }, 250)
+  })
+
+  function resetFilters() {
+    searchTerm = ''; activeType = 'all'; activeCat = 'all'; activeLang = 'all'
+    document.getElementById('resourceSearch').value = ''
+    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'))
+    document.querySelectorAll('[data-type="all"], [data-cat="all"], [data-lang="all"]')
+            .forEach(b => b.classList.add('active'))
+    renderResources()
+  }
+
+  // Check for ?lang=es in URL
+  const urlLang = new URLSearchParams(window.location.search).get('lang')
+  if (urlLang) {
+    activeLang = urlLang
+    document.querySelectorAll('#langFilters .filter-pill').forEach(b => {
+      b.classList.toggle('active', b.dataset.lang === urlLang)
+    })
+  }
+
+  init()
+</script>
+</body>
+</html>
