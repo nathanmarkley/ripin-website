@@ -1,0 +1,25 @@
+# ============================================================
+# .gitignore — These files NEVER go to GitHub
+# ============================================================
+
+# Credentials — NEVER commit
+.env
+.env.*
+
+# Uploaded files — stay on Bluehost only
+/assets/images/*
+/assets/pdfs/*
+!assets/images/.gitkeep
+!assets/pdfs/.gitkeep
+
+# Logs and cache
+/logs/*
+/cache/*
+!logs/.gitkeep
+!cache/.gitkeep
+
+# System files
+.DS_Store
+Thumbs.db
+*.log
+*.swp
