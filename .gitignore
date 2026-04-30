@@ -23,3 +23,6 @@
 Thumbs.db
 *.log
 *.swp
+
+# Server-only files - never commit
+.htaccess
