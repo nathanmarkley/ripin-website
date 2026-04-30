@@ -60,8 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="card">
   <div class="card-top">
     <div class="card-icon">🔐</div>
-    <h1 style="font-family:'Fraunces',serif;color:#fff;font-size:1.5rem;font-weight:700;margin-bottom:.25rem">RIPIN Staff Portal</h1>
-    <p style="color:rgba(255,255,255,.75);font-size:.875rem;margin:0">Sign in to manage your website</p>
+    <h1 style="font-family:'Fraunces',serif;color:#fff;font-size:1.5rem;font-weight:700;margin-bottom:.25rem">RIPIN Staff Website Portal</h1>
+    <p style="color:rgba(255,255,255,.75);font-size:.875rem;margin:0">Sign in to manage RIPIN's website</p>
   </div>
   <div class="card-body">
     <?php if ($error): ?>
@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
       <button type="submit" class="btn-login">Sign In →</button>
     </form>
-    <p class="text-center text-muted mt-4 mb-0" style="font-size:.8125rem">Need access? Contact your RIPIN administrator.</p>
+    <p class="text-center text-muted mt-4 mb-0" style="font-size:.8125rem">Need access? Contact RIPIN's IT Department.</p>
   </div>
 </div>
 <script>
